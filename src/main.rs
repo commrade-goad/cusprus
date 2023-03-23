@@ -21,7 +21,7 @@ fn read_configuration() -> (Vec<String>, Vec<String>, String) {
     if std::path::Path::new(&path_to_config).is_file() == false {
         let mut create_config = fs::File::create(&path_to_config)
             .expect("Error : Failed to create the configuration file!");
-        create_config.write_all(b"pretty_name = [\"Example Name\", \"Example 2\"]\ncommand = [\"echo hello $USER\", \"echo this is example 2\"]").expect("Error : Failed to write the configuration file");
+        create_config.write_all(b"prompt_name = \"Special Menu\", pretty_name = [\"Example Name\", \"Example 2\"]\ncommand = [\"echo hello $USER\", \"echo this is example 2\"]").expect("Error : Failed to write the configuration file");
         println!("Info : Created the configuration file.\nInfo : configuration file created at `{path_to_config}` with the example.");
     }
     let read_file = match fs::read_to_string(path_to_config) {
