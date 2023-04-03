@@ -12,19 +12,32 @@ struct Config {
     command: Vec<String>,
 }
 
-fn read_configuration() -> (Vec<String>, Vec<String>, String) {
-    let home_folder: String = match env::var("HOME") {
-        Ok(val) => val,
-        Err(err) => panic!("Error : Failed to read $HOME env var => {err}"),
-    };
-    let path_to_config: String = format!("{home_folder}/.config/cusprus.toml");
-    if std::path::Path::new(&path_to_config).is_file() == false {
-        let mut create_config = fs::File::create(&path_to_config)
+fn read_args() -> Vec<String> {
+    return std::env::args().collect();
+}
+
+fn read_configuration(path_to_config: &String) -> (Vec<String>, Vec<String>, String) {
+    let mut config = String::new();
+    match &path_to_config[..] {
+        "None" => { 
+            let home_folder: String = match env::var("HOME") {
+                Ok(val) => val,
+                Err(err) => panic!("Error : Failed to read $HOME env var => {err}"),
+            };
+            config.push_str(&format!("{home_folder}/.config/cusprus.toml"));
+        }
+        _ => {
+            config.push_str(path_to_config);
+        }
+    }
+    if std::path::Path::new(&config).is_file() == false {
+        println!("Error : Configuration file at `{}` doesnt exist!",config);
+        let mut create_config = fs::File::create(&config)
             .expect("Error : Failed to create the configuration file!");
         create_config.write_all(b"prompt_name = \"Special Menu\", pretty_name = [\"Example Name\", \"Example 2\"]\ncommand = [\"echo hello $USER\", \"echo this is example 2\"]").expect("Error : Failed to write the configuration file");
         println!("Info : Created the configuration file.\nInfo : configuration file created at `{path_to_config}` with the example.");
     }
-    let read_file = match fs::read_to_string(path_to_config) {
+    let read_file = match fs::read_to_string(config) {
         Ok(val) => val,
         Err(err) => panic!("Error : Failed to read the configuration file => {err}"),
     };
@@ -47,7 +60,11 @@ fn spawn_rofi(pretty_name: Vec<String>, prompt_name:String) -> usize {
 }
 
 fn main() {
-    let configuration = read_configuration();
+    let mut user_args: Vec<String> = read_args();
+    if user_args.len() < 2 {
+        user_args.push("None".to_string());
+    }
+    let configuration = read_configuration(&user_args[1]);
     let value = spawn_rofi(configuration.0, configuration.2);
     std::process::Command::new("sh")
         .arg("-c")
