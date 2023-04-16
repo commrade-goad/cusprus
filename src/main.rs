@@ -4,6 +4,7 @@ use serde_derive::Deserialize;
 use std::env;
 use std::fs;
 use std::io::Write;
+use std::process;
 
 #[derive(Deserialize)]
 struct Config {
@@ -18,24 +19,30 @@ fn read_args() -> Vec<String> {
 
 fn read_configuration(path_to_config: &String) -> (Vec<String>, Vec<String>, String) {
     let mut config = String::new();
+    let path_to_def_conf = match env::var("HOME") {
+        Ok(val) => format!("{val}/.config/cusprus.toml"),
+        Err(err) => panic!("Error : Failed to read $HOME env var => {err}"),
+    };
     match &path_to_config[..] {
         "None" => { 
-            let home_folder: String = match env::var("HOME") {
-                Ok(val) => val,
-                Err(err) => panic!("Error : Failed to read $HOME env var => {err}"),
-            };
-            config.push_str(&format!("{home_folder}/.config/cusprus.toml"));
+            config.push_str(&path_to_def_conf);
         }
         _ => {
             config.push_str(path_to_config);
         }
     }
     if std::path::Path::new(&config).is_file() == false {
-        println!("Error : Configuration file at `{}` doesnt exist!",config);
-        let mut create_config = fs::File::create(&config)
-            .expect("Error : Failed to create the configuration file!");
-        create_config.write_all(b"prompt_name = \"Special Menu\", pretty_name = [\"Example Name\", \"Example 2\"]\ncommand = [\"echo hello $USER\", \"echo this is example 2\"]").expect("Error : Failed to write the configuration file");
-        println!("Info : Created the configuration file.\nInfo : configuration file created at `{path_to_config}` with the example.");
+        if std::path::Path::new(&path_to_def_conf).is_file() == true {
+            println!("{}", format!("Error : Configuration file at `{}` doesnt exist!",&config));
+            process::exit(1);
+        } else {
+            println!("Error : Configuration file at `{}` doesnt exist!",&config);
+            let mut create_config = fs::File::create(&path_to_def_conf)
+                .expect("Error : Failed to create the configuration file!");
+            create_config.write_all(b"prompt_name = \"Special Menu\"\npretty_name = [\"Example Name\", \"Example 2\"]\ncommand = [\"echo hello $USER\", \"echo this is example 2\"]").expect("Error : Failed to write the configuration file");
+            println!("Info : Example configuration file created at `{path_to_def_conf}`.");
+            process::exit(1);
+        }
     }
     let read_file = match fs::read_to_string(config) {
         Ok(val) => val,
